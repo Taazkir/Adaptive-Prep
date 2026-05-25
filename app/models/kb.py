@@ -44,7 +44,7 @@ class Answer(SQLModel, table=True):
     user_answer_id: str
     is_correct: bool
 
-    question: Question = Relationship(back_populates="answers")
+    questions: Question = Relationship(back_populates="answers")
 
 
 
