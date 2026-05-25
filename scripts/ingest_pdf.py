@@ -30,7 +30,7 @@ def detect() -> List[Tuple[int, str, int, int, str]]:
             if cur_id is not None:                # flush previous
                 out.append((cur_id, title, start, idx - 1, "\n".join(chunk)))
             cur_id = int(m.group(1))
-            title  = m.group(2).strip() 
+            title  = m.group(2).strip()
             chunk, start = [txt], idx
         else:
             chunk.append(txt)
@@ -38,3 +38,27 @@ def detect() -> List[Tuple[int, str, int, int, str]]:
     if cur_id is not None:                        # flush final block
         out.append((cur_id, title, start, len(doc) - 1, "\n".join(chunk)))
     return out
+
+
+def main():
+    items = detect()
+    print(f"Found {len(items)} sections.")
+    with Session(engine) as s:
+        for sid, title, p0, p1, body in items:
+            if s.get(Section, sid):
+                continue                          # already present
+            s.add(
+                Section(
+                    id=sid,
+                    title=title,
+                    page_start=p0,
+                    page_end=p1,
+                    raw_text=body.strip(),
+                )
+            )
+        s.commit()
+    print("✓ Sections inserted.")
+
+
+if __name__ == "__main__":
+    main()
