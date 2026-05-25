@@ -10,12 +10,12 @@ engine = create_engine(f"sqlite:///{_path}", echo=False, future=True)
 
 # Table Creation
 def create_db_and_tables():
-    from models import kb
+    from app.models import kb
     SQLModel.metadata.create_all(engine)
     print(f"DB created at {_path}")
 
 # Query Helpers
-from models.kb import Section, Session as PrepSession, Question, Answer
+from app.models.kb import Section, Session as PrepSession, Question, Answer
 
 def get_session(session_id: int) -> PrepSession | None:
     with Session(engine) as session:
