@@ -1,20 +1,22 @@
 # 📘 Adaptive Document Preparation System
 An AI-powered backend system that ingests structured PDF documents, generates MCQs using an LLM, evaluates user responses, and builds an adaptive knowledge base that improves future question generation based on user weaknesses.
-🚀 Features
-📄 PDF ingestion into structured sections
-🤖 LLM-powered MCQ generation (Groq / OpenAI-compatible / local LLM supported)
-🧠 Adaptive learning via persistent Knowledge Base (KB)
-📊 Auto-scoring and explanations for answers
-🔁 Weak-topic tracking across sessions
-📦 Session snapshot export for evaluation
-⚡ REST API-first architecture (FastAPI)
-🏗️ Tech Stack
-Backend: FastAPI (Python)
-Database: SQLite (SQLModel)
-LLM: Groq / OpenAI-compatible / local LLM (configurable)
-PDF Parsing: PyMuPDF
-Orchestration: Custom service layer (app/services)
-Testing: curl-based workflow + optional scripts
+
+# 🚀 Features
+## 📄 PDF ingestion into structured sections
+## 🤖 LLM-powered MCQ generation (Groq / OpenAI-compatible / local LLM supported)
+## 🧠 Adaptive learning via persistent Knowledge Base (KB)
+## 📊 Auto-scoring and explanations for answers
+## 🔁 Weak-topic tracking across sessions
+## 📦 Session snapshot export for evaluation
+## ⚡ REST API-first architecture (FastAPI)
+## 🏗️ Tech Stack
+## Backend: FastAPI (Python)
+## Database: SQLite (SQLModel)
+## LLM: Groq / OpenAI-compatible / local LLM (configurable)
+## PDF Parsing: PyMuPDF
+## Orchestration: Custom service layer (app/services)
+## Testing: curl-based workflow + optional scripts
+
 # 📂 Project Structure
 
 ```
@@ -130,6 +132,7 @@ Output:
 recent sessions
 weak topics across sessions
 historical performance tracking
+
 # 🧪 Evaluation Scenarios
 
 ✅ Scenario A — Cold Start
@@ -271,51 +274,64 @@ outputs/
 ```
 
 # 🧠 What Reviewers Should Observe
+
 After Iteration 1:
-baseline weak topics created
+- baseline weak topics created
+
 After Iteration 2:
-overlapping weak topics tracked
-repeated mistakes aggregated
+- overlapping weak topics tracked
+- repeated mistakes aggregated
+
 After Iteration 3:
-MCQs should shift toward weak topics
-repeated concepts reduced
-stronger personalization signal
+- MCQs should shift toward weak topics
+- repeated concepts reduced
+- stronger personalization signal
 
 # 📌 Key Design Highlights
+
 1. Adaptive KB
+
 Tracks:
-question-level correctness
-topic-level aggregation
-repeated mistakes weighting 
+- question-level correctness
+- topic-level aggregation
+- repeated mistakes weighting 
 
 2. Session Persistence
-Each session stores:
-questions asked
-user answers
-correctness
-explanations
 
-3. Adaptive Prompting (core requirement)
-LLM receives:
-weak topics
-prior mistakes
-section context
+Each session stores:
+- questions asked
+- user answers
+- correctness
+- explanations
+
+4. Adaptive Prompting (core requirement)
+
+- LLM receives:
+- weak topics
+- prior mistakes
+- section context
 
 
 # ⚠️ Assumptions
-PDF is clean text (non-scanned)
-Section IDs are stable post-ingestion
-LLM returns structured MCQs
-User input simulated or manual via curl
+
+- PDF is clean text (non-scanned)
+- Section IDs are stable post-ingestion
+- LLM returns structured MCQs
+- User input simulated or manual via curl
 
 # 🧪 Quick Test Command (Full Flow)
+```
 python -m scripts.init_db && \
 python -m scripts.ingest_pdf && \
 uvicorn app.main:app --reload
+```
+
 Then run Scenario B curl commands above.
-🏁 Final Notes
+
+# 🏁 Final Notes
+
 This system is designed to demonstrate:
-real-world LLM orchestration
-memory + adaptation layer
-production-style backend architecture
-evaluation-driven design
+- real-world LLM orchestration
+- memory + adaptation layer
+- production-style backend architecture
+- evaluation-driven design
