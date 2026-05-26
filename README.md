@@ -1,4 +1,4 @@
-📘 Adaptive Document Preparation System
+# 📘 Adaptive Document Preparation System
 An AI-powered backend system that ingests structured PDF documents, generates MCQs using an LLM, evaluates user responses, and builds an adaptive knowledge base that improves future question generation based on user weaknesses.
 🚀 Features
 📄 PDF ingestion into structured sections
@@ -15,7 +15,9 @@ LLM: Groq / OpenAI-compatible / local LLM (configurable)
 PDF Parsing: PyMuPDF
 Orchestration: Custom service layer (app/services)
 Testing: curl-based workflow + optional scripts
-📂 Project Structure
+# 📂 Project Structure
+
+```
 adaptive-prep/
 │── app/
 │   ├── main.py
@@ -38,33 +40,56 @@ adaptive-prep/
 │── SLATEFALL_DOSSIER.pdf
 │── requirements.txt
 
-⚙️ Setup Instructions
+```
+
+# ⚙️ Setup Instructions
+
 1. Clone repo
+```
 git clone <your-repo-url>
 cd adaptive-prep
-2. Create virtual environment
+```
+3. Create virtual environment
+```
 python -m venv .venv
 source .venv/bin/activate   # Mac/Linux
-3. Install dependencies
+```
+5. Install dependencies
+```
 pip install -r requirements.txt
-4. Setup environment variables
+
+```
+7. Setup environment variables
+
+```
 Create .env:
 GROQ_API_KEY=your_key_here
-5. Initialize database
+
+```
+9. Initialize database
+```
 python -m scripts.init_db
 Expected:
 DB created at adaptive.db
-6. Ingest PDF into sections
+```
+11. Ingest PDF into sections
+```
 python -m scripts.ingest_pdf
 Expected:
 Found 10 sections
 Sections inserted
-7. Run API server
+```
+13. Run API server
+```
 uvicorn app.main:app --reload
 Server:
 http://127.0.0.1:8000
-🔁 Core API Workflow
+```
+
+# 🔁 Core API Workflow
+
 1. Start Prep Session
+```
 curl -X POST "http://127.0.0.1:8000/prep/start" \
 -H "Content-Type: application/json" \
 -d '{
@@ -75,7 +100,9 @@ Response:
 session_id
 generated MCQs
 section mapping
-2. Submit Answers
+```
+3. Submit Answers
+```
 curl -X POST "http://127.0.0.1:8000/prep/submit-answers" \
 -H "Content-Type: application/json" \
 -d '{
@@ -93,23 +120,32 @@ score
 per-question feedback
 explanations
 corrections for wrong answers
-3. Get Knowledge Base Snapshot
+```
+4. Get Knowledge Base Snapshot
+```
 curl -X GET "http://127.0.0.1:8000/prep/kb-snapshot"
+```
+
 Output:
 recent sessions
 weak topics across sessions
 historical performance tracking
-🧪 Evaluation Scenarios
+# 🧪 Evaluation Scenarios
+
 ✅ Scenario A — Cold Start
 Step 1
+```
 curl -X POST "http://127.0.0.1:8000/prep/start" \
 -H "Content-Type: application/json" \
 -d '{
   "user_id": "user_a",
   "section_ids": [5,8]
 }'
+```
 Step 2
+
 Submit answers (simulate any mix)
+```
 curl -X POST "http://127.0.0.1:8000/prep/submit-answers" \
 -H "Content-Type: application/json" \
 -d '{
@@ -122,18 +158,29 @@ curl -X POST "http://127.0.0.1:8000/prep/submit-answers" \
     "5": "A"
   }
 }'
+
+```
 Step 3
+```
 curl -X GET "http://127.0.0.1:8000/prep/kb-snapshot"
+
+```
 🔁 Scenario B — Adaptive Learning (IMPORTANT)
-This demonstrates core evaluation requirement: history-aware adaptation
+
+This demonstrates the core evaluation requirement: history-aware adaptation
 Iteration 1 (baseline learning)
+```
 curl -X POST "http://127.0.0.1:8000/prep/start" \
 -H "Content-Type: application/json" \
 -d '{
   "user_id": "adaptive_user",
   "section_ids": [5,8]
 }'
+
+```
+
 Submit answers:
+```
 curl -X POST "http://127.0.0.1:8000/prep/submit-answers" \
 -H "Content-Type: application/json" \
 -d '{
@@ -146,7 +193,10 @@ curl -X POST "http://127.0.0.1:8000/prep/submit-answers" \
     "5": "C"
   }
 }'
+```
+
 Save snapshot:
+```
 curl -X GET "http://127.0.0.1:8000/prep/kb-snapshot" > outputs/scenario_b_iter1.json
 Iteration 2 (repeat + observe adaptation)
 curl -X POST "http://127.0.0.1:8000/prep/start" \
@@ -155,7 +205,10 @@ curl -X POST "http://127.0.0.1:8000/prep/start" \
   "user_id": "adaptive_user",
   "section_ids": [6,8,9]
 }'
+```
+
 Submit answers:
+```
 curl -X POST "http://127.0.0.1:8000/prep/submit-answers" \
 -H "Content-Type: application/json" \
 -d '{
@@ -168,16 +221,27 @@ curl -X POST "http://127.0.0.1:8000/prep/submit-answers" \
     "10": "A"
   }
 }'
+```
+
 Save snapshot:
+
+```
 curl -X GET "http://127.0.0.1:8000/prep/kb-snapshot" > outputs/scenario_b_iter2.json
+
+```
 Iteration 3 (weak-topic reinforcement)
+```
 curl -X POST "http://127.0.0.1:8000/prep/start" \
 -H "Content-Type: application/json" \
 -d '{
   "user_id": "adaptive_user",
   "section_ids": [8]
 }'
+```
+
 Submit answers:
+
+```
 curl -X POST "http://127.0.0.1:8000/prep/submit-answers" \
 -H "Content-Type: application/json" \
 -d '{
@@ -190,15 +254,23 @@ curl -X POST "http://127.0.0.1:8000/prep/submit-answers" \
     "15": "A"
   }
 }'
+```
+
 Save snapshot:
+```
 curl -X GET "http://127.0.0.1:8000/prep/kb-snapshot" > outputs/scenario_b_iter3.json
-📦 Expected Output Structure
+```
+
+# 📦 Expected Output Structure
+```
 outputs/
 └── scenario_b/
     ├── iter1_kb.json
     ├── iter2_kb.json
     └── iter3_kb.json
-🧠 What Reviewers Should Observe
+```
+
+# 🧠 What Reviewers Should Observe
 After Iteration 1:
 baseline weak topics created
 After Iteration 2:
@@ -208,29 +280,35 @@ After Iteration 3:
 MCQs should shift toward weak topics
 repeated concepts reduced
 stronger personalization signal
-📌 Key Design Highlights
+
+# 📌 Key Design Highlights
 1. Adaptive KB
 Tracks:
 question-level correctness
 topic-level aggregation
-repeated mistakes weighting
+repeated mistakes weighting 
+
 2. Session Persistence
 Each session stores:
 questions asked
 user answers
 correctness
 explanations
+
 3. Adaptive Prompting (core requirement)
 LLM receives:
 weak topics
 prior mistakes
 section context
-⚠️ Assumptions
+
+
+# ⚠️ Assumptions
 PDF is clean text (non-scanned)
 Section IDs are stable post-ingestion
 LLM returns structured MCQs
 User input simulated or manual via curl
-🧪 Quick Test Command (Full Flow)
+
+# 🧪 Quick Test Command (Full Flow)
 python -m scripts.init_db && \
 python -m scripts.ingest_pdf && \
 uvicorn app.main:app --reload
