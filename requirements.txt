@@ -8,3 +8,5 @@ python-multipart==0.0.29
 tqdm==4.* # progress bars
 requests==2.*
 typer==0.25.* # CLI helper
+groq==1.2.0
+python-dotenv==1.0.*

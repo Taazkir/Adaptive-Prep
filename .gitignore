@@ -1,5 +1,6 @@
 pycache/
-.env/
+.env
+.venv
 .vscode/
 outputs/
 SLATEFALL_DOSSIER.pdf
