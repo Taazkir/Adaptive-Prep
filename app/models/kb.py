@@ -46,7 +46,14 @@ class Answer(SQLModel, table=True):
 
     questions: Question = Relationship(back_populates="answers")
 
-
+# Track weak topics for adaptation
+class WeakTopic(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    section_id: int = Field(foreign_key="section.id")
+    topic_name: str
+    times_wrong: int = 1
+    last_session_id: int = Field(foreign_key="session.id")
+    last_seen: datetime = Field(default_factory=datetime.utcnow)
 
 
 
