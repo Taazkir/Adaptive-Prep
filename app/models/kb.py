@@ -16,6 +16,8 @@ class Session(SQLModel, table=True):
     user_id: str
     started_at: datetime
     section_ids_csv: str
+    completed_at: Optional[datetime] = None
+    score: Optional[float] = None  # percentage correct
 
     questions: List["Question"] = Relationship(back_populates="session")
 
@@ -33,6 +35,7 @@ class Question(SQLModel, table=True):
     choice_d: str
     correct_answer: str
     explanation: str
+    topic_tag: str
 
     session: Session = Relationship(back_populates="questions")
     answers: List["Answer"] = Relationship(back_populates="questions")
@@ -41,8 +44,9 @@ class Question(SQLModel, table=True):
 class Answer(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     question_id: int = Field(foreign_key="question.id")
-    user_answer_id: str
+    user_answer: str  # A, B, C, or D
     is_correct: bool
+    clarification: Optional[str] = None  # For wrong answers
 
     questions: Question = Relationship(back_populates="answers")
 

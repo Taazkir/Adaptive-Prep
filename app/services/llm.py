@@ -10,10 +10,11 @@ client = Groq(api_key=GROQ_API_KEY)
 
 
 def generate_mcqs(
-        section_text: str,
-        section_title: str,
-        num_questions: int = 5,
-        weak_topics: Optional[List[str]] = None,
+    section_text: str,
+    section_title: str,
+    num_questions: int = 5,
+    weak_topics: Optional[List[str]] = None,
+    previous_questions: Optional[List[str]] = None,
 ) -> List[dict]:
     """
     Generate MCQs from section text using Groq.
@@ -34,30 +35,68 @@ def generate_mcqs(
     if weak_topics:
         weak_context = f"\n\nIMPORTANT: The user has struggled with these topics before: {', '.join(weak_topics)}. Focus at least 2-3 questions on these areas to help them improve."
 
+    previous_questions_context = ""
+    if previous_questions:
+        joined_questions = "\n".join(
+            [f"- {q}" for q in previous_questions[:10]]
+        )
+
+        previous_questions_context = f"""
+
+    AVOID REPEATING THESE PREVIOUS QUESTIONS:
+    {joined_questions}
+
+    Generate NEW questions that test similar concepts differently.
+    Do NOT repeat wording verbatim.
+    """
+
     # Truncate section text if too long (Groq has token limits)
     max_chars = 3000
     if len(section_text) > max_chars:
         section_text = section_text[:max_chars] + "\n[... text truncated ...]"
 
-    prompt = f"""You are an expert educational assessment designer. 
+    prompt = f"""
+    You are an expert educational assessment designer.
 
-Based on the following section from a document, generate exactly {num_questions} multiple-choice questions.
+    Generate exactly {num_questions} high-quality multiple choice questions.
 
-SECTION TITLE: {section_title}
+    SECTION TITLE:
+    {section_title}
 
-SECTION TEXT:
-{section_text}
-{weak_context}
+    SECTION TEXT:
+    {section_text}
 
-REQUIREMENTS:
-- Generate exactly {num_questions} questions
-- Each question should test understanding of key concepts
-- Provide 4 choices (A, B, C, D) for each question
-- Clearly mark the correct answer
-- Include a brief explanation (1-2 sentences) for why the answer is correct
-- Format your response as a JSON array with objects containing:
-  {{"question": "...", "choice_a": "...", "choice_b": "...", "choice_c": "...", "choice_d": "...", "correct_answer": "A", "explanation": "..."}}
+    {weak_context}
 
+    {previous_questions_context}
+
+    IMPORTANT RULES:
+    - Only generate questions directly supported by the provided text
+    - Do NOT hallucinate facts
+    - Avoid repeating previous questions verbatim
+    - Focus more heavily on weak topics if provided
+    - Questions should test comprehension, not trivial memorization
+    - Each question must have exactly 4 choices
+    - Exactly one correct answer
+    - Explanations should be concise and grounded in the text
+    - Create a short topic_tag for each question
+
+    Return ONLY valid JSON.
+
+    Required JSON format:
+
+    [
+      {{
+        "question": "...",
+        "choice_a": "...",
+        "choice_b": "...",
+        "choice_c": "...",
+        "choice_d": "...",
+        "correct_answer": "A",
+        "explanation": "...",
+        "topic_tag": "short topic label"
+      }}
+    ]
 Return ONLY valid JSON, no other text."""
 
     try:
@@ -76,8 +115,16 @@ Return ONLY valid JSON, no other text."""
 
         # Validate structure
         for q in questions:
-            required_keys = {"question", "choice_a", "choice_b", "choice_c", "choice_d", "correct_answer",
-                             "explanation"}
+            required_keys = {
+                "question",
+                "choice_a",
+                "choice_b",
+                "choice_c",
+                "choice_d",
+                "correct_answer",
+                "explanation",
+                "topic_tag"
+            }
             if not all(k in q for k in required_keys):
                 raise ValueError(f"Question missing required keys: {q}")
             if q["correct_answer"] not in ["A", "B", "C", "D"]:
@@ -108,16 +155,28 @@ def generate_clarification(
     Returns:
         Clarification string
     """
-    prompt = f"""A user answered a question incorrectly. Provide a brief, clear explanation of why their answer was wrong and why the correct answer is right.
+    prompt = f"""
+    You are explaining why an answer was incorrect.
 
-Question: {question}
-User's Answer: {user_answer}
-Correct Answer: {correct_answer}
+    Use ONLY the provided context.
+    Do not speculate.
+    Do not mention missing context if the answer exists in context.
 
-Context from document:
-{section_text[:1000]}
+    Question:
+    {question}
 
-Provide a concise explanation (2-3 sentences max) that helps them understand."""
+    User Answer:
+    {user_answer}
+
+    Correct Answer:
+    {correct_answer}
+
+    Context:
+    {section_text[:1500]}
+
+    Return:
+    1-3 concise sentences.
+    """
 
     try:
         message = client.chat.completions.create(

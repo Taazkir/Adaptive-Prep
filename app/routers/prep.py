@@ -4,6 +4,9 @@ REST API endpoints for the prep system.
 from fastapi import APIRouter, HTTPException, Body
 from typing import List
 from pydantic import BaseModel
+from sqlmodel import Session as SQLSession
+from app.models.kb import Question
+from app.services.kb import engine
 
 from app.services.prep import (
     create_session,
@@ -48,13 +51,6 @@ class SubmitAnswersResponse(BaseModel):
 def start_prep(request: StartPrepRequest):
     """
     Start a new prep session and generate MCQs.
-
-    Args:
-        user_id: User identifier
-        section_ids: List of section IDs to study (e.g., [1, 3, 5])
-
-    Returns:
-        Session details with generated questions
     """
     try:
         # Create session
@@ -63,27 +59,29 @@ def start_prep(request: StartPrepRequest):
             section_ids=request.section_ids
         )
 
-        # Generate questions (considers weak topics for adaptation)
-        questions = generate_questions_for_session(
+        # Generate questions (returns question IDs)
+        question_ids = generate_questions_for_session(
             session_id=session.id,
             section_ids=request.section_ids
         )
 
-        # Format questions for response
-        questions_data = [
-            {
-                "question_id": q.id,
-                "section_id": q.section_id,
-                "question": q.question,
-                "choices": {
-                    "A": q.choice_a,
-                    "B": q.choice_b,
-                    "C": q.choice_c,
-                    "D": q.choice_d
-                }
-            }
-            for q in questions
-        ]
+        # Fetch question details from DB
+        questions_data = []
+        with SQLSession(engine) as db_session:
+            for qid in question_ids:
+                q = db_session.get(Question, qid)
+                if q:
+                    questions_data.append({
+                        "question_id": q.id,
+                        "section_id": q.section_id,
+                        "question": q.question,
+                        "choices": {
+                            "A": q.choice_a,
+                            "B": q.choice_b,
+                            "C": q.choice_c,
+                            "D": q.choice_d
+                        }
+                    })
 
         return StartPrepResponse(
             session_id=session.id,

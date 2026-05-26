@@ -61,7 +61,7 @@ def generate_questions_for_session(
         session_id: int,
         section_ids: List[int],
         num_questions_per_section: int = DEFAULT_QUESTIONS_PER_SECTION
-) -> List[Question]:
+) -> List[int]:
     """
     Generate MCQs for a session, considering weak topics for adaptation.
 
@@ -71,9 +71,9 @@ def generate_questions_for_session(
         num_questions_per_section: Questions per section
 
     Returns:
-        List of Question objects (saved to DB)
+        List of question IDs (not Question objects)
     """
-    questions_list = []
+    question_ids = []
 
     with SQLSession(engine) as db_session:
         for section_id in section_ids:
@@ -86,13 +86,23 @@ def generate_questions_for_session(
             # Get weak topics for this section
             weak_topics = get_weak_topics_for_sections([section_id], limit=2)
 
-            # Generate MCQs with adaptation
-            mcq_list = generate_mcqs(
-                section_text=section.raw_text,
-                section_title=section.title,
-                num_questions=num_questions_per_section,
-                weak_topics=weak_topics if weak_topics else None
+            previous_questions = get_previous_questions_for_sections(
+                [section_id],
+                limit=10
             )
+
+            # Generate MCQs with adaptation
+            try:
+                mcq_list = generate_mcqs(
+                    section_text=section.raw_text,
+                    section_title=section.title,
+                    num_questions=num_questions_per_section,
+                    weak_topics=weak_topics if weak_topics else None,
+                    previous_questions=previous_questions if previous_questions else None
+                )
+            except Exception as e:
+                print(f"⚠️ Failed to generate MCQs for section {section_id}: {e}")
+                continue
 
             # Save questions to DB
             for mcq in mcq_list:
@@ -105,15 +115,21 @@ def generate_questions_for_session(
                     choice_c=mcq["choice_c"],
                     choice_d=mcq["choice_d"],
                     correct_answer=mcq["correct_answer"],
-                    explanation=mcq["explanation"]
+                    explanation=mcq["explanation"],
+                    topic_tag=mcq["topic_tag"],
                 )
                 db_session.add(question)
-                questions_list.append(question)
+
+            db_session.flush()  # Flush to get IDs
 
         db_session.commit()
 
-    return questions_list
+        # Now fetch the IDs while still in session
+        stmt = select(Question).where(Question.session_id == session_id)
+        questions = list(db_session.exec(stmt))
+        question_ids = [q.id for q in questions]
 
+    return question_ids
 
 def submit_answers(
         session_id: int,
@@ -164,7 +180,7 @@ def submit_answers(
 
             # Generate clarification for wrong answers
             clarification = None
-            if not is_correct and user_answer:
+            if not is_correct:
                 section = db_session.get(Section, question.section_id)
                 clarification = generate_clarification(
                     question=question.question,
@@ -176,7 +192,7 @@ def submit_answers(
                 # Track weak topic
                 weak_topics_to_add.append({
                     "section_id": question.section_id,
-                    "topic": question.question[:50],  # Use question start as topic
+                    "topic": question.topic_tag,
                     "session_id": session_id
                 })
 
@@ -283,3 +299,19 @@ def get_session_details(session_id: int) -> Optional[dict]:
             "section_ids": [int(x) for x in session.section_ids_csv.split(",")],
             "questions": questions_data
         }
+
+def get_previous_questions_for_sections(
+    section_ids: List[int],
+    limit: int = 20
+) -> List[str]:
+
+    with SQLSession(engine) as session:
+        stmt = (
+            select(Question.question)
+            .where(Question.section_id.in_(section_ids))
+            .limit(limit)
+        )
+
+        questions = session.exec(stmt).all()
+
+    return questions
